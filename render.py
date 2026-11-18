@@ -454,10 +454,24 @@ CONTINENTS = [
 ]
 
 # story number -> (lon, lat) pin position on the map
+# At this scale 1 deg ~ 1.25 px, so genuinely close stories overlap:
+# Gaza (7) hid behind Lebanon (11), Kerch (2) behind Kyiv (5), and
+# Iran (1) behind Oman (4). Each pair is nudged apart along the coast
+# or region just far enough that all 13 circles clear each other
+# (every nearest-neighbour pair is >= 15 px apart, pins are 14 px wide).
 PINS = {
-    1: (56, 27), 2: (36, 45), 3: (121, 15), 4: (58, 21), 5: (30, 50),
-    6: (139, 36), 7: (34, 31), 8: (-98, 39), 9: (-74, 41), 10: (45, 13),
-    11: (36, 34), 12: (2, 49), 13: (-122, 47),
+    1: (53, 30), 2: (40, 47), 3: (121, 15), 4: (59, 19), 5: (28, 52),
+    6: (139, 36), 7: (30, 27), 8: (-98, 39), 9: (-74, 41), 10: (45, 13),
+    11: (39, 35), 12: (2, 49), 13: (-122, 47),
+}
+
+# story number -> region colour, same RGB values as the legend in build()
+PIN_REGION = {
+    1: (200, 130, 40), 2: (31, 58, 95), 3: (120, 80, 160),
+    4: (200, 130, 40), 5: (31, 58, 95), 6: (120, 80, 160),
+    7: (200, 130, 40), 8: (176, 42, 32), 9: (176, 42, 32),
+    10: (200, 130, 40), 11: (200, 130, 40), 12: (31, 58, 95),
+    13: (176, 42, 32),
 }
 
 
@@ -471,7 +485,7 @@ def draw_map(draw, box):
     for n, (lon, lat) in PINS.items():
         px = x0 + (lon + 170) / 360.0 * (x1 - x0)
         py = y0 + (75 - lat) / 130.0 * (y1 - y0)
-        draw.ellipse((px - 7, py - 7, px + 7, py + 7), fill=RED,
+        draw.ellipse((px - 7, py - 7, px + 7, py + 7), fill=PIN_REGION[n],
                      outline=(255, 255, 255), width=1)
         t = str(n)
         tw = draw.textlength(t, font=font(SANS_B, 9))
@@ -578,11 +592,25 @@ ALSO_ON = [
 
 
 # ---------------------------------------------------------------- layout
+def paint_clipped(draw, painter, box):
+    """Render a scene painter onto its own layer, then paste it clipped
+    to the box. No pixel of the scene may escape the panel frame:
+    smoke, skylines and sea arcs that used to spill into the gutter
+    or over neighbouring text are cut off at the box edge."""
+    base = draw._image
+    x0, y0, x1, y1 = box
+    w, h = x1 - x0, y1 - y0
+    layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    ldraw = ImageDraw.Draw(layer)
+    painter(ldraw, (0, 0, w, h))
+    base.paste(layer, (x0, y0), layer)
+
+
 def story_block(draw, x, y, w, s, img_h, hero=False):
     n, kicker, headline, deck, painter = s
     box = (x, y, x + w, y + img_h)
     if painter is not None:
-        painter(draw, box)
+        paint_clipped(draw, painter, box)
     frame(draw, box)
     ty = y + img_h + 7
     # number badge + kicker
