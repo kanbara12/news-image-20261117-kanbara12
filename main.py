@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""news-image-20261117 entry for @kanbara12.
+"""Entry point for news-image-20261117 (@kanbara12).
 
-The front page is pre-rendered (entry.png, drawn at build time by
-render.py with PIL). This program only copies that image to the
-output directory, exactly like the kit starter. Pure standard
-library; deterministic: the same bytes on every run.
+The front page is rendered at build time by render.py into entry.png.
+This program just copies that file into the output directory, so it
+needs nothing but the standard library and writes identical bytes on
+every run.
 """
+
 import os
 import shutil
-import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
 
-def main() -> int:
-    out_dir = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
-    out_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(HERE / "entry.png", out_dir / "entry.png")
+def main():
+    output = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
+    output.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(HERE / "entry.png", output / "entry.png")
     return 0
 
 
